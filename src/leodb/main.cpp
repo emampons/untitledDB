@@ -13,10 +13,17 @@ int main() {
     Key<int> two (6);
     Entry<int, int> hello(one,val);
 
-    DB<int, int> test;
-    test.put(Key<int>(1), Value<int>(3));
-    test.put(Key<int>(10), Value<int>(32));
+    DB<int, int> db;
+    for (int x = 0; x <= 22; x++){
+        if (x % 2 == 0) {
+            db.put(Key<int>(x), Value<int>(3));
+        } else {
+            db.put(Key<int>(x*2), Value<int>(3));
+        }
 
-    std::cout<<test.stddev(false);
+    }
+//    db.flushMemory();
+//    std::cout << db.get(Key<int>(0)).getItem();
+
     return 0;
 }

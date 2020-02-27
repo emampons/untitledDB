@@ -1,7 +1,23 @@
 #include "db.h"
 #include "entry.h"
+#include "run.cpp"
+#include "level.cpp"
+#include "level.h"
 #include <cmath>
+#include <map>
 
+// Global Variables
+int INMEMORYTHRESHOLD = 10;
+
+template<class T, class U>
+DB<T, U>::DB() {
+    /*
+     * Function constructor: Initialize our DB
+     */
+    inMemoryThreshold = INMEMORYTHRESHOLD;
+    runThreshold = RUNTHRESHOLD;
+    levelMapping.push_back(currentLevel);
+}
 
 template<class T, class U>
 bool DB<T, U>::put(Key<T> key, Value<U> value) {
@@ -16,6 +32,7 @@ bool DB<T, U>::put(Key<T> key, Value<U> value) {
         totalKeys += 1;
     }
     table[inserted] = Entry<T, U>(key, value);
+    flushMemory();
     return true;
 }
 
@@ -35,7 +52,7 @@ bool DB<T, U>::del(Key<T> key) {
 }
 
 template<class T, class U>
-Value<T> DB<T, U>::get(Key<T> key) {
+Value<U> DB<T, U>::get(Key<T> key) {
     /*
      * Function get: Get a Value from a Key in our DBMS
      * Param Key key: Key to use for lookup
@@ -44,19 +61,19 @@ Value<T> DB<T, U>::get(Key<T> key) {
     try {
         return table[key.hashItem()].getValue();
     } catch (int e) {
-        return NULL;
+        return Value<U>();
     }
 }
 
 template<class T, class U>
-std::vector<Value<T> > DB<T, U>::scan(Key<T> low, Key<T> high) {
+std::vector<Value<U> > DB<T, U>::scan(Key<T> low, Key<T> high) {
     /*
      * Function scan: Get a Value from a Key in our DBMS
      * Param Key low: Lower-bound to scan
      * Param Key high: Higher-bound to scan
      * Return: Vector of values related to Keys between low/high
      */
-    std::vector<Value<T> > ret;
+    std::vector<Value<U> > ret;
 
     for (auto pair: table)
     {
@@ -155,7 +172,7 @@ float DB<T, U>::stddev(bool keys){
 
     // Loop over and sum the difference squared
     float running_sum = 0.0;
-    for (auto pair: table){
+    for (auto pair: table) {
         Entry<T, U> entry = pair.second;
         if (keys) {
             running_sum += pow((entry.getKey().getItem() - average), 2);
@@ -164,4 +181,40 @@ float DB<T, U>::stddev(bool keys){
         }
     }
     return sqrt(running_sum / ((float) totalKeys-1));
+}
+
+//template<class T, class U>
+//bool comp() {
+//
+//    return a < b;
+//}
+
+template<class T, class U>
+void DB<T, U>::flushMemory(){
+    /*
+    * Function flushMemory: Flush memory to disk if we are above inMemoryThreshold
+    */
+    if (totalKeys >= inMemoryThreshold) {
+        struct {
+            // Helper function to compare pairs
+            bool operator()(const std::pair<int, Entry<T, U> > &a, const std::pair<int, Entry<T, U> > &b) const {
+                return a.first < b.first;
+            }
+        } customLess;
+        // Copy to vector and sort
+        std::vector<std::pair<int, Entry<T, U> > > sorted(table.begin(), table.end());
+        std::sort(sorted.begin(), sorted.end(), customLess);
+        // Add to current level
+        currentLevel.addRun(sorted);
+
+        while (currentLevel.getTotalRuns() >= currentLevel.getRunThreshold()) {
+            // Merge all the runs and push to next level
+
+            // Move to the next level
+            currentLevel = levelMapping[totalLevels]
+        }
+        // Reset our in-memory values
+        table = std::unordered_map<int, Entry<T, U> >();
+        totalKeys = 0;
+    }
 }
