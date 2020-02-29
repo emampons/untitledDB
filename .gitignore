@@ -11,7 +11,8 @@ CMakeCache.txt
 googletest-build/*
 *.cbp
 *.tcl
-
+*.leodb
+.database/*
 
 
 # Executables created

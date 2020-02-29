@@ -3,6 +3,7 @@
   vars:
     build_tests: "0"
     clean_up: "1"
+    debug: "0"
   tasks:
     - name: Starting to compile
       block:
@@ -20,6 +21,11 @@
               ./leodb
           register: output
         - debug: msg="{{ output.stdout }}"
+    - name: (Optional) Clean up database
+      when: "{{ debug }} == 1"
+      file:
+        path: ".database"
+        state: absent
     - name: Clean up
       block:
         - name: Clean up directory
